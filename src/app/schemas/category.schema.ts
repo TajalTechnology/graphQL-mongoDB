@@ -7,20 +7,34 @@ import Category from "../models/category.model";
 
 export const typeDefs = gql`
     type Category {
-        id: ID
         name: String
         category: String
         parentCategory: String
         isActive: Boolean
     }
 
+    type SearchCategory {
+        name: String
+        category: String
+        parentCategory: String
+        isActive: Boolean
+        parent: Category
+    }
+
     type Query {
         category(_id: ID!): Category
         categories: [Category]
-        searchCategory: Category
+        searchCategory(category: String): SearchCategory
     }
 
     input CategoryInput {
+        name: String
+        category: String
+        parentCategory: String
+        isActive: Boolean
+    }
+
+    input BulkInput {
         name: String
         category: String
         parentCategory: String
@@ -31,7 +45,7 @@ export const typeDefs = gql`
         createCategory(post: CategoryInput): Category
         updateCategory(id: String, post: CategoryInput): Category
         deleteCategory(id: String): String
-        buikStatusChange(category: String, isActive: Boolean): [Category]
+        buikStatusChange(bulkChange: BulkInput): [Category]
     }
 `;
 
@@ -51,17 +65,20 @@ export const resolvers = {
             context: any,
             info: any
         ) => {
-            const regex = new RegExp(`^${args.category}$`, "i");
-            const data: any = Category.findOne({ category: regex });
-            const parentCategoryName = data.parentCategory.split("/");
-            const parentCategory = Category.findOne({
-                parentCategory:
-                    parentCategoryName[parentCategoryName.length - 1],
+            let data: any = await Category.findOne({
+                category: new RegExp(`^${args.category}$`, "i"),
             });
 
-            return { ...data, parentCategory };
+            const parentCategoryName = data.parentCategory.split("/");
+            const parentCategory = await Category.findOne({
+                category: parentCategoryName[parentCategoryName.length - 1],
+            });
+
+            if (!parentCategory) return { ...data._doc, parent: data._doc };
+            return { ...data._doc, parent: parentCategory };
         },
     },
+
     Mutation: {
         createCategory: async (
             parent: any,
@@ -101,17 +118,24 @@ export const resolvers = {
             context: any,
             info: any
         ) => {
-            const { category, isActive } = args.update;
+            const { category, isActive } = args.bulkChange;
             const regex = new RegExp(category.replace("/", "\\/"), "i");
 
             const filter = {
-                category: regex,
-                parentCategory: { $regex: regex, $options: "i" },
+                $or: [
+                    { category: category },
+                    { parentCategory: { $regex: category, $options: "i" } },
+                ],
             };
 
-            const update = { $set: { isActive } };
-            const data = await Category.updateMany(filter, update).lean();
-            return data;
+            if (isActive) {
+                const update = { $set: { isActive } };
+                const bulkChange = await Category.updateMany(
+                    filter,
+                    update
+                ).lean();
+            }
+            return "Secsessfully Executed";
         },
 
         deleteCategory: async (
