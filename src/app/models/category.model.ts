@@ -21,6 +21,8 @@ const CategorySchema = new mongoose.Schema(
         strict: true,
     }
 );
+// Create an index on category and parentCategory fields
+CategorySchema.index({ category: "text", parentCategory: "text" });
 
 const CategoryModel = mongoose.model<CategoryDocument>(
     "Category",

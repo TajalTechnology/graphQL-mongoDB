@@ -1,8 +1,6 @@
-import swaggerUI from "swagger-ui-express";
 import utils from "../common/services/utils";
 import { ApolloServer } from "apollo-server-express";
 import { accesssOrigin } from "./common/utils/accessOrigin";
-import swaggerDocument from "../app/common/utils/swagger.json";
 import { typeDefs, resolvers } from "./schemas/category.schema";
 
 /* ----------------------------------- */
@@ -21,12 +19,7 @@ app.use(accesssOrigin);
 /* ----------------------------------- */
 utils.localService("mongoose", app);
 utils.middleware("body-parser", app);
-utils.middleware("api-response", app);
 utils.localService("logger", app);
-utils.middleware("try-catch", app);
-
-//swagger implementation
-app.use("/api/docs", swaggerUI.serve, swaggerUI.setup(swaggerDocument));
 
 const startServer = async () => {
     const apolloServer = new ApolloServer({

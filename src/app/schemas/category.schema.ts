@@ -17,6 +17,7 @@ export const typeDefs = gql`
     type Query {
         category(_id: ID!): Category
         categories: [Category]
+        searchCategory: Category
     }
 
     input CategoryInput {
@@ -30,6 +31,7 @@ export const typeDefs = gql`
         createCategory(post: CategoryInput): Category
         updateCategory(id: String, post: CategoryInput): Category
         deleteCategory(id: String): String
+        buikStatusChange(category: String, isActive: Boolean): [Category]
     }
 `;
 
@@ -38,8 +40,26 @@ export const resolvers = {
         category: async (parent: any, args: any, context: any, info: any) => {
             return Category.findOne({ _id: args._id });
         },
+
         categories: async () => {
             return await Category.find();
+        },
+
+        searchCategory: async (
+            parent: any,
+            args: any,
+            context: any,
+            info: any
+        ) => {
+            const regex = new RegExp(`^${args.category}$`, "i");
+            const data: any = Category.findOne({ category: regex });
+            const parentCategoryName = data.parentCategory.split("/");
+            const parentCategory = Category.findOne({
+                parentCategory:
+                    parentCategoryName[parentCategoryName.length - 1],
+            });
+
+            return { ...data, parentCategory };
         },
     },
     Mutation: {
@@ -73,6 +93,25 @@ export const resolvers = {
                 { new: true }
             );
             return update;
+        },
+
+        buikStatusChange: async (
+            parent: any,
+            args: any,
+            context: any,
+            info: any
+        ) => {
+            const { category, isActive } = args.update;
+            const regex = new RegExp(category.replace("/", "\\/"), "i");
+
+            const filter = {
+                category: regex,
+                parentCategory: { $regex: regex, $options: "i" },
+            };
+
+            const update = { $set: { isActive } };
+            const data = await Category.updateMany(filter, update).lean();
+            return data;
         },
 
         deleteCategory: async (

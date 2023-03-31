@@ -1,9 +1,13 @@
-import express from 'express';
-import path from 'path';
+import express from "express";
+import path from "path";
 
 export default {
-
-    initApp: function (_options: { [x: string]: any; baseUri?: string; dirname?: string; hasOwnProperty?: any; }) {
+    initApp: function (_options: {
+        [x: string]: any;
+        baseUri?: string;
+        dirname?: string;
+        hasOwnProperty?: any;
+    }) {
         var app = express();
         for (var property in _options) {
             if (_options.hasOwnProperty(property)) {
@@ -11,23 +15,25 @@ export default {
             }
         }
 
-        app.locals.dirname += '/';
+        app.locals.dirname += "/";
         app.locals.appdirname = path.basename(app.locals.dirname);
-        app.locals.isDev = app.get('env') === 'development' || process.env.NODE_ENV === 'development';
+        app.locals.isDev =
+            app.get("env") === "development" ||
+            process.env.NODE_ENV === "development";
         return app;
     },
 
-    localService: function (_name: string | number, _app: { locals: { [x: string]: any; dirname: string; }; }) {
-        var _path: string = _app.locals.dirname + '/common/services/';
-        return _app.locals[_name] = require(_path + _name).init(_app);
+    localService: function (
+        _name: string | number,
+        _app: { locals: { [x: string]: any; dirname: string } }
+    ) {
+        var _path: string = _app.locals.dirname + "/common/services/";
+        return (_app.locals[_name] = require(_path + _name).init(_app));
     },
 
     middleware: function middleware(_name: string, _app: any) {
-        var middlewarePath = '../middlewares/';
+        var middlewarePath = "../middlewares/";
         var _path: string = middlewarePath;
         require(_path + _name)(_app);
     },
-
-}
-
-
+};
